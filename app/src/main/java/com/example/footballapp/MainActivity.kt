@@ -122,14 +122,17 @@ fun FootballTableWidget(teams: List<TeamStats>) {
             }
         }
         items(teams) { team ->
-            Row(modifier = Modifier.fillMaxWidth().padding(8.dp).border(bottom = 1.dp, color = Color(0xFFF0F0F0))) {
-                Text(team.group, modifier = Modifier.weight(0.12f), color = Color.Gray)
-                Text(team.name, modifier = Modifier.weight(0.38f), fontWeight = FontWeight.Medium)
-                Text(team.matches.toString(), modifier = Modifier.weight(0.1f))
-                Text(team.wins.toString(), modifier = Modifier.weight(0.1f))
-                Text(team.draws.toString(), modifier = Modifier.weight(0.1f))
-                Text(team.losses.toString(), modifier = Modifier.weight(0.1f))
-                Text(team.points.toString(), modifier = Modifier.weight(0.1f), fontWeight = FontWeight.Bold, color = Color(0xFF0288D1))
+            Column {
+                Row(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
+                    Text(team.group, modifier = Modifier.weight(0.12f), color = Color.Gray)
+                    Text(team.name, modifier = Modifier.weight(0.38f), fontWeight = FontWeight.Medium)
+                    Text(team.matches.toString(), modifier = Modifier.weight(0.1f))
+                    Text(team.wins.toString(), modifier = Modifier.weight(0.1f))
+                    Text(team.draws.toString(), modifier = Modifier.weight(0.1f))
+                    Text(team.losses.toString(), modifier = Modifier.weight(0.1f))
+                    Text(team.points.toString(), modifier = Modifier.weight(0.1f), fontWeight = FontWeight.Bold, color = Color(0xFF0288D1))
+                }
+                Spacer(modifier = Modifier.fillMaxWidth().height(1.dp).background(Color(0xFFF0F0F0)))
             }
         }
     }
