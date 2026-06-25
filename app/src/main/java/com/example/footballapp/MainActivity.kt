@@ -111,7 +111,7 @@ fun MainScreen() {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("ЧМ 2026 — Аналитика", color = Color.White) },
+                title = { Text("ЧМ 2026 — Аналитика групп", color = Color.White) },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF0288D1))
             )
         }
@@ -126,12 +126,23 @@ fun MainScreen() {
     }
 }
 
+/**
+ * Расширенная палитра пастельных цветов для всех 12 групп ЧМ-2026 (от A до L)
+ */
 fun getGroupColor(group: String): Color {
-    return when (group.uppercase()) {
-        "A" -> Color(0xFFFFF1F1)
-        "B" -> Color(0xFFF1FDF1)
-        "C" -> Color(0xFFF1F7FF)
-        "D" -> Color(0xFFFFFBF0)
+    return when (group.uppercase().trim()) {
+        "A" -> Color(0xFFFFF1F1) // Нежно-красный
+        "B" -> Color(0xFFF1FDF1) // Нежно-зеленый
+        "C" -> Color(0xFFF1F7FF) // Нежно-синий
+        "D" -> Color(0xFFFFFBF0) // Нежно-желтый
+        "E" -> Color(0xFFFBF0FF) // Нежно-фиолетовый
+        "F" -> Color(0xFFF0FFFF) // Нежно-бирюзовый
+        "G" -> Color(0xFFFFF0FA) // Нежно-розовый
+        "H" -> Color(0xFFF5F5DC) // Бежевый
+        "I" -> Color(0xFFE6E6FA) // Лавандовый
+        "J" -> Color(0xFFFFF0F5) // Светло-лилейный
+        "K" -> Color(0xFFF0F8FF) // Светло-голубой
+        "L" -> Color(0xFFF4FFF4) // Мятный
         else -> Color(0xFFFFFFFF)
     }
 }
@@ -237,7 +248,9 @@ fun parseFootballDataJson(jsonText: String): List<TeamStats> {
         for (i in 0 until standingsArray.length()) {
             val standingItem = standingsArray.optJSONObject(i) ?: continue
             val rawGroup = standingItem.optString("group", "—")
-            val groupName = rawGroup.replace("GROUP_", "")
+            
+            // Абсолютно чистая фильтрация: убираем "GROUP_", "Group " и любые лишние пробелы
+            val groupName = rawGroup.replace("GROUP_", "").replace("Group ", "").trim()
             
             val tableArray = standingItem.optJSONArray("table") ?: continue
             for (j in 0 until tableArray.length()) {
