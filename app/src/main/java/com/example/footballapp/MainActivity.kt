@@ -26,9 +26,6 @@ import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 
-/**
- * Обновленная модель данных с расширенной футбольной статистикой.
- */
 data class TeamStats(
     val name: String,
     val group: String,
@@ -66,7 +63,6 @@ fun MainScreen() {
     var isLoading by remember { mutableStateOf(true) }
     var teamsList by remember { mutableStateOf(listOf<TeamStats>()) }
 
-    // Резервный список с полной структурой данных
     val fallbackData = listOf(
         TeamStats("Аргентина", "A", 3, 2, 1, 0, 6, 2, 15, 4, 7),
         TeamStats("Бразилия", "A", 3, 1, 2, 0, 4, 2, 18, 5, 5),
@@ -130,16 +126,13 @@ fun MainScreen() {
     }
 }
 
-/**
- * Функция подбора мягкого пастельного цвета для фона группы
- */
 fun getGroupColor(group: String): Color {
     return when (group.uppercase()) {
-        "A" -> Color(0xFFFFF1F1) // Нежно-красный
-        "B" -> Color(0xFFF1FDF1) // Нежно-зеленый
-        "C" -> Color(0xFFF1F7FF) // Нежно-синий
-        "D" -> Color(0xFFFFFBF0) // Нежно-желтый
-        else -> Color(0xFFFFFFFF) // Белый для остальных
+        "A" -> Color(0xFFFFF1F1)
+        "B" -> Color(0xFFF1FDF1)
+        "C" -> Color(0xFFF1F7FF)
+        "D" -> Color(0xFFFFFBF0)
+        else -> Color(0xFFFFFFFF)
     }
 }
 
@@ -180,12 +173,10 @@ fun FootballTableWidget(teams: List<TeamStats>) {
 
     LazyColumn(modifier = Modifier.fillMaxSize().padding(4.dp).border(1.dp, Color(0xFFDDDDDD))) {
         item {
-            // Заголовок таблицы: Фиксированная левая часть и скроллируемая правая
-            Row(modifier = Modifier.fillMaxWidth().background(Color(0xFFE1F5FE)).padding(vertical = 10.md.dp)) {
+            Row(modifier = Modifier.fillMaxWidth().background(Color(0xFFE1F5FE)).padding(vertical = 10.dp)) {
                 Text("Гр.", modifier = Modifier.width(40.dp).clickable { toggleSort(SortColumn.GROUP) }, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
                 Text("Команда${getArrow(SortColumn.NAME)}", modifier = Modifier.width(110.dp).clickable { toggleSort(SortColumn.NAME) }, fontWeight = FontWeight.Bold)
                 
-                // Прокручиваемая часть заголовков
                 Row(modifier = Modifier.horizontalScroll(horizontalScrollState)) {
                     Text("И${getArrow(SortColumn.MATCHES)}", modifier = Modifier.width(35.dp).clickable { toggleSort(SortColumn.MATCHES) }, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
                     Text("В", modifier = Modifier.width(30.dp).clickable { toggleSort(SortColumn.WINS) }, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
@@ -203,11 +194,9 @@ fun FootballTableWidget(teams: List<TeamStats>) {
             val rowColor = getGroupColor(team.group)
             Column(modifier = Modifier.background(rowColor)) {
                 Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    // Строка: Фиксированная левая часть
                     Text(team.group, modifier = Modifier.width(40.dp), color = Color.DarkGray, textAlign = TextAlign.Center, fontWeight = FontWeight.Bold)
                     Text(team.name, modifier = Modifier.width(110.dp), fontWeight = FontWeight.Medium, maxLines = 1)
                     
-                    // Строка: Прокручиваемая правая часть со всей расширенной статистикой
                     Row(modifier = Modifier.horizontalScroll(horizontalScrollState)) {
                         Text(team.matches.toString(), modifier = Modifier.width(35.dp), textAlign = TextAlign.Center)
                         Text(team.wins.toString(), modifier = Modifier.width(30.dp), textAlign = TextAlign.Center)
@@ -262,7 +251,6 @@ fun parseFootballDataJson(jsonText: String): List<TeamStats> {
                 val goalsScored = rowObj.optInt("goalsFor", 0)
                 val goalsConceded = rowObj.optInt("goalsAgainst", 0)
                 
-                // Профессиональный расчет угловых и карточек на основе сыгранных игр и веса команды
                 val baseModifier = (teamName.length % 3) + 1
                 val calculatedCorners = playedGames * 4 + baseModifier
                 val calculatedCards = playedGames * 2 - (if (baseModifier > 2) 1 else 0)
