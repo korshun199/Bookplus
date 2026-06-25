@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -23,9 +24,6 @@ import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 
-/**
- * Модель данных для хранения статистики одной футбольной команды.
- */
 data class TeamStats(
     val name: String,
     val group: String,
@@ -35,6 +33,10 @@ data class TeamStats(
     val losses: Int,
     val points: Int
 )
+
+enum class SortColumn {
+    GROUP, NAME, MATCHES, WINS, DRAWS, LOSSES, POINTS
+}
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -54,9 +56,7 @@ class MainActivity : ComponentActivity() {
 fun MainScreen() {
     var isLoading by remember { mutableStateOf(true) }
     var teamsList by remember { mutableStateOf(listOf<TeamStats>()) }
-    val scope = rememberCoroutineScope()
 
-    // Наш железный резерв на случай сбоя сети
     val fallbackData = listOf(
         TeamStats("Аргентина", "A", 3, 2, 1, 0, 7),
         TeamStats("Франция", "B", 3, 2, 0, 1, 6),
@@ -72,22 +72,19 @@ fun MainScreen() {
         isLoading = true
         try {
             val result = withContext(Dispatchers.IO) {
-                // Ссылка на официальную турнирную таблицу ЧМ (World Cup)
                 val url = URL("https://api.football-data.org/v4/competitions/WC/standings")
                 val connection = url.openConnection() as HttpURLConnection
                 try {
                     connection.connectTimeout = 10000
                     connection.readTimeout = 10000
                     connection.requestMethod = "GET"
-                    
-                    // Передаем твой личный секретный токен авторизации
                     connection.setRequestProperty("X-Auth-Token", "e4cb8b2594414c0aaa62ccff4f48ed89")
                     
                     if (connection.responseCode == 200) {
                         val jsonText = connection.inputStream.bufferedReader().use { it.readText() }
                         parseFootballDataJson(jsonText)
                     } else {
-                        emptyList() // Если сервер вернул ошибку, отдаем пустой список для включения резерва
+                        emptyList()
                     }
                 } catch (e: Exception) {
                     emptyList()
@@ -96,15 +93,10 @@ fun MainScreen() {
                 }
             }
 
-            // Если живые данные успешно получены — выводим их, иначе — включаем резерв
-            teamsList = if (result.isEmpty()) {
-                fallbackData.sortedByDescending { it.points }
-            } else {
-                result.sortedByDescending { it.points }
-            }
+            teamsList = if (result.isEmpty()) fallbackData else result
             isLoading = false
         } catch (e: Exception) {
-            teamsList = fallbackData.sortedByDescending { it.points }
+            teamsList = fallbackData
             isLoading = false
         }
     }
@@ -114,7 +106,7 @@ fun MainScreen() {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("ЧМ 2026 — Живые данные", color = Color.White) },
+                title = { Text("ЧМ 2026 — Интерактивная таблица", color = Color.White) },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF0288D1))
             )
         }
@@ -129,26 +121,53 @@ fun MainScreen() {
     }
 }
 
-/**
- * Отрисовка таблицы на экране смартфона
- */
 @Composable
 fun FootballTableWidget(teams: List<TeamStats>) {
+    var currentSortColumn by remember { mutableStateOf(SortColumn.POINTS) }
+    var isAscending by remember { mutableStateOf(false) }
+
+    // Логика динамической сортировки данных
+    val sortedTeams = remember(teams, currentSortColumn, isAscending) {
+        val comparator = when (currentSortColumn) {
+            SortColumn.GROUP -> compareBy<TeamStats> { it.group }
+            SortColumn.NAME -> compareBy { it.name }
+            SortColumn.MATCHES -> compareBy { it.matches }
+            SortColumn.WINS -> compareBy { it.wins }
+            SortColumn.DRAWS -> compareBy { it.draws }
+            SortColumn.LOSSES -> compareBy { it.losses }
+            SortColumn.POINTS -> compareBy { it.points }
+        }
+        if (isAscending) teams.sortedWith(comparator) else teams.sortedWith(comparator).reversed()
+    }
+
+    val toggleSort: (SortColumn) -> Unit = { column ->
+        if (currentSortColumn == column) {
+            isAscending = !isAscending
+        } else {
+            currentSortColumn = column
+            isAscending = (column == SortColumn.NAME || column == SortColumn.GROUP)
+        }
+    }
+
+    val getArrow: (SortColumn) -> String = { column ->
+        if (currentSortColumn == column) (if (isAscending) "▲" else "▼") else ""
+    }
+
     LazyColumn(modifier = Modifier.fillMaxSize().padding(8.dp).border(1.dp, Color(0xFFCCCCCC))) {
         item {
             Row(modifier = Modifier.fillMaxWidth().background(Color(0xFFE1F5FE)).padding(8.dp)) {
-                Text("Гр.", modifier = Modifier.weight(0.12f), fontWeight = FontWeight.Bold)
-                Text("Команда", modifier = Modifier.weight(0.38f), fontWeight = FontWeight.Bold)
-                Text("И", modifier = Modifier.weight(0.1f), fontWeight = FontWeight.Bold)
-                Text("В", modifier = Modifier.weight(0.1f), fontWeight = FontWeight.Bold)
-                Text("Н", modifier = Modifier.weight(0.1f), fontWeight = FontWeight.Bold)
-                Text("П", modifier = Modifier.weight(0.1f), fontWeight = FontWeight.Bold)
-                Text("О", modifier = Modifier.weight(0.1f), fontWeight = FontWeight.Bold)
+                Text(text = "Гр.${getArrow(SortColumn.GROUP)}", modifier = Modifier.weight(0.12f).clickable { toggleSort(SortColumn.GROUP) }, fontWeight = FontWeight.Bold)
+                Text(text = "Команда${getArrow(SortColumn.NAME)}", modifier = Modifier.weight(0.38f).clickable { toggleSort(SortColumn.NAME) }, fontWeight = FontWeight.Bold)
+                Text(text = "И${getArrow(SortColumn.MATCHES)}", modifier = Modifier.weight(0.1f).clickable { toggleSort(SortColumn.MATCHES) }, fontWeight = FontWeight.Bold)
+                Text(text = "В${getArrow(SortColumn.WINS)}", modifier = Modifier.weight(0.1f).clickable { toggleSort(SortColumn.WINS) }, fontWeight = FontWeight.Bold)
+                Text(text = "Н${getArrow(SortColumn.DRAWS)}", modifier = Modifier.weight(0.1f).clickable { toggleSort(SortColumn.DRAWS) }, fontWeight = FontWeight.Bold)
+                Text(text = "П${getArrow(SortColumn.LOSSES)}", modifier = Modifier.weight(0.1f).clickable { toggleSort(SortColumn.LOSSES) }, fontWeight = FontWeight.Bold)
+                Text(text = "О${getArrow(SortColumn.POINTS)}", modifier = Modifier.weight(0.1f).clickable { toggleSort(SortColumn.POINTS) }, fontWeight = FontWeight.Bold)
             }
         }
-        items(teams) { team ->
+        items(sortedTeams) { team ->
             Column {
-                Row(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
+                Row(modifier = Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(team.group, modifier = Modifier.weight(0.12f), color = Color.Gray)
                     Text(team.name, modifier = Modifier.weight(0.38f), fontWeight = FontWeight.Medium)
                     Text(team.matches.toString(), modifier = Modifier.weight(0.1f))
@@ -163,32 +182,42 @@ fun FootballTableWidget(teams: List<TeamStats>) {
     }
 }
 
-/**
- * Профессиональный парсер официального JSON-ответа от Football-Data.org (V4)
- */
 fun parseFootballDataJson(jsonText: String): List<TeamStats> {
     val list = mutableListOf<TeamStats>()
+    
+    // Словарь-переводчик англоязычных названий стран участников ЧМ на русский язык
+    val teamTranslation = mapOf(
+        "Argentina" to "Аргентина", "France" to "Франция", "Spain" to "Испания",
+        "Brazil" to "Бразилия", "Portugal" to "Португалия", "Netherlands" to "Нидерланды",
+        "USA" to "США", "Mexico" to "Мексика", "Germany" to "Германия",
+        "England" to "Англия", "Italy" to "Италия", "Croatia" to "Хорватия",
+        "Morocco" to "Марокко", "Japan" to "Япония", "South Korea" to "Южная Корея",
+        "Uruguay" to "Уругвай", "Senegal" to "Сенегал", "Canada" to "Канада",
+        "Iran" to "Иран", "Saudi Arabia" to "Саудовская Аравия", "Belgium" to "Бельгия",
+        "Switzerland" to "Швейцария", "Denmark" to "Дания", "Tunisia" to "Тунис",
+        "Poland" to "Польша", "Australia" to "Австралия", "Ecuador" to "Эквадор", 
+        "Qatar" to "Катар", "Wales" to "Уэльс", "Costa Rica" to "Коста-Рика", 
+        "Cameroon" to "Камерун", "Ghana" to "Гана", "Serbia" to "Сербия"
+    )
+
     try {
         val rootObj = JSONObject(jsonText)
         val standingsArray = rootObj.optJSONArray("standings") ?: return list
         
         for (i in 0 until standingsArray.length()) {
             val standingItem = standingsArray.optJSONObject(i) ?: continue
-            
-            // Получаем имя группы, например "GROUP_A" и превращаем в чистую "A"
             val rawGroup = standingItem.optString("group", "—")
             val groupName = rawGroup.replace("GROUP_", "")
             
-            // Заходим во внутреннюю таблицу этой группы
             val tableArray = standingItem.optJSONArray("table") ?: continue
             for (j in 0 until tableArray.length()) {
                 val rowObj = tableArray.optJSONObject(j) ?: continue
-                
-                // Извлекаем объект команды и её название
                 val teamObj = rowObj.optJSONObject("team") ?: continue
-                val teamName = teamObj.optString("name", "Команда")
                 
-                // Добавляем команду в наш итоговый список
+                val englishName = teamObj.optString("name", "Команда")
+                // Если страна есть в нашем словаре — берем русский перевод, иначе оставляем оригинал
+                val teamName = teamTranslation[englishName] ?: englishName
+                
                 list.add(TeamStats(
                     name = teamName,
                     group = groupName,
