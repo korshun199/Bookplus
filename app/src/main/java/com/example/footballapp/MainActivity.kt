@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -26,6 +27,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
+
 
 data class TeamStats(
     val name: String,
@@ -297,4 +299,22 @@ fun parseFootballDataJson(jsonText: String): List<TeamStats> {
         e.printStackTrace()
     }
     return list
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PreviewFootballTableWidget() {
+    val sampleTeams = listOf(
+        TeamStats("Аргентина", "A", 3, 2, 1, 0, 6, 2, 15, 4, 7),
+        TeamStats("Бразилия", "A", 3, 1, 2, 0, 4, 2, 18, 5, 5),
+        TeamStats("Франция", "B", 3, 2, 0, 1, 7, 3, 14, 6, 6),
+        TeamStats("Нидерланды", "B", 3, 1, 1, 1, 4, 4, 12, 3, 4),
+        TeamStats("Испания", "C", 3, 2, 0, 1, 5, 2, 16, 5, 6),
+        TeamStats("США", "C", 3, 1, 0, 2, 3, 5, 11, 8, 3),
+        TeamStats("Португалия", "D", 3, 1, 1, 1, 5, 4, 13, 7, 4),
+        TeamStats("Мексика", "D", 3, 0, 1, 2, 2, 6, 9, 9, 1)
+    )
+    MaterialTheme {
+        FootballTableWidget(teams = sampleTeams)
+    }
 }
